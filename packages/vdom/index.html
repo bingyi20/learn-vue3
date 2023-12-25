@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>渲染器</title>
+    <script src="./dom-ops.js"></script>
+    <script src="./renderer.js"></script>
+</head>
+<body>
+
+    <div id="app"></div>
+
+    <script>
+
+        const container = document.querySelector('#app')
+
+        const renderer = createRender({
+            insert,
+            createElement,
+            setElementText
+        })
+
+        const vnode = {
+            type: 'div',
+            children: [
+                {
+                    type: 'h1',
+                    children: 'hello world'
+                },
+                {
+                    type: 'h2',
+                    children: 'I love the world'
+                },
+                {
+                    type: 'span',
+                    children: 'miss fina'
+                }
+            ]
+        }
+        // 首次调用【挂载】
+        renderer.render(vnode, container)
+
+        // 第二次调用【更新】
+        // renderer.render(vdom, container)
+
+
+    </script>
+    
+</body>
+</html>
