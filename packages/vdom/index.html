@@ -4,48 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>渲染器</title>
-    <script src="./dom-ops.js"></script>
+    <script src="https://unpkg.com/@vue/reactivity@3.0.5/dist/reactivity.global.js"></script>
     <script src="./renderer.js"></script>
+    <style>
+        .red {
+            color: red;
+        }
+    </style>
 </head>
 <body>
-
     <div id="app"></div>
 
     <script>
+        const {effect, ref} = VueReactivity
 
+        const counter = ref(1)
+        const girls = new Array(10000).fill(0).map((_, idx) => `girl-${idx}`)
+        console.log(girls)
+        const girlList = ref(girls)
+        const bool = ref(true)
+
+        console.log(counter.value)
+
+        const Text = Symbol('Text')
+        const Comment = Symbol('Comment')
+        const Fragment = Symbol('Fragment')
+
+        // 编译生成的 render 函数
+        function render() {
+            const vnode = {
+                type: 'div',
+                children: [
+                    {
+                        type: 'p',
+                        children: 'Vue'
+                    },
+                    {
+                        type: 'p',
+                        children: 'Render'
+                    },
+                    {
+                        type: 'input',
+                        props: {
+                            value: counter.value,
+                            style: 'margin-right: 5px;',
+                            oninput (e) {
+                                counter.value = e.srcElement.value
+                            }
+                        }
+                    },
+                    {
+                        type: 'button',
+                        children: '点我+1',
+                        props: {
+                            onClick: [ 
+                                function() {
+                                    counter.value++
+                                },
+                                function() {
+                                    console.log(counter.value)
+                                }
+                            ],
+                            oncontextmenu() {
+                                console.log('右键点击')
+                            }
+                        }
+                    },
+                    {
+                        type: 'h1',
+                        props: {
+                            class: 'red',
+                            id: 'title',
+                            style: 'font-size: 80px;'
+                        },
+                        children: '' + counter.value
+                    },
+                    {
+                      type: 'div',
+                      children: [
+                        {
+                            type: Text,
+                            children: '我是文本节点'
+                        },
+                        {
+                            type: Comment,
+                            children: '我是注释节点'
+                        }
+                      ]  
+                    },
+                    {
+                        type: 'div',
+                        key: 'girlList',
+                        children: [
+                            {
+                                type: 'h2',
+                                children: '后宫佳丽'
+                            },
+                            {
+                                type: 'ul',
+                                children: [{
+                                    type: Fragment,
+                                    children: girlList.value.map((name) => {
+                                        return {
+                                            key: name,
+                                            type: 'li',
+                                            children: name
+                                        }
+                                    })
+                                }]
+                            }
+                        ]
+                    }
+                    
+                ]
+            }
+
+            // const vnode = {
+            //     type: 'ul',
+            //     children: girlList.value.map(name => {
+            //         return {
+            //             type: 'li',
+            //             children: name,
+            //             key: name
+            //         }
+            //     })
+            // }
+            if(!bool.value) {
+                vnode.children.splice(5, 1)
+            }
+            console.log(vnode)
+            return vnode
+        }
+
+        let patchCost = 0
+
+        const renderer = createRenderer({
+            createElement(type) {
+                patchCost++
+                return document.createElement(type)
+            },
+            setElementText(el, text) {
+                patchCost++
+                el.textContent = text
+            },
+            insert(node, parent, anchor = null) {
+                patchCost++
+                parent.insertBefore(node, anchor)
+            },
+            createTextNode(val) {
+                patchCost++
+                return document.createTextNode(val)
+            },
+            createCommentNode(val) {
+                patchCost++
+                return document.createComment(val)
+            }
+        })
+        
         const container = document.querySelector('#app')
-
-        const renderer = createRender({
-            insert,
-            createElement,
-            setElementText
+        // 渲染入口
+        effect(() => {
+            console.time('CostTime')
+            patchCost = 0
+            const vnode = render()
+            renderer.render(vnode, container)
+            console.log("===> 更新代价为：", patchCost)
+            console.timeEnd('CostTime')
         })
 
-        const vnode = {
-            type: 'div',
-            children: [
-                {
-                    type: 'h1',
-                    children: 'hello world'
-                },
-                {
-                    type: 'h2',
-                    children: 'I love the world'
-                },
-                {
-                    type: 'span',
-                    children: 'miss fina'
-                }
-            ]
-        }
-        // 首次调用【挂载】
-        renderer.render(vnode, container)
-
-        // 第二次调用【更新】
-        // renderer.render(vdom, container)
-
-
     </script>
-    
 </body>
 </html>
